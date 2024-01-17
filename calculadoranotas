@@ -1,0 +1,583 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <conio.h>
+#include <windows.h>
+#include <ctype.h>
+
+// Mudanças principais nessa segunda parte: adição de excluir registro, editar registro, atribuir nota da calculadora a um aluno por id, buscar registro por campo e valor do campo, manipulação de cores para deixar o sistema mais atrativo, criação de uma arquivo txt para armazenar os registros, recebimento de nome composto no campo "curso" foi corrigido.
+
+// Função que procura uma substring em uma string (usada na busca por campo)
+char *strcasestr(const char *haystack, const char *needle)
+{
+    
+    while (*haystack)
+    {
+        const char *h = haystack;
+        const char *n = needle;
+
+        while (*h && *n && (tolower((unsigned char)*h) == tolower((unsigned char)*n)))
+        {
+            h++;
+            n++;
+        }
+
+        if (!*n)
+        {
+            return (char *)haystack;
+        }
+
+        haystack++;
+    }
+
+    return NULL;
+} 
+// definindo cores 
+ #define ANSI_COLOR_GREEN "\x1b[32m"
+ #define ANSI_COLOR_RESET   "\x1b[0m"
+ #define ANSI_COLOR_BG_BLUE "\x1b[44m"
+ #define ANSI_COLOR_BG_RED "\x1b[48;5;196m"
+ #define ANSI_COLOR_BG_DARK_GREEN "\x1b[48;5;22m"
+ #define ANSI_COLOR_BG_BROWN "\x1b[48;5;52m"
+ #define ANSI_COLOR_BG_MAGENTA "\x1b[48;5;5m"
+ #define ANSI_COLOR_BG_DARK_ORANGE "\x1b[48;5;130m"
+ #define ANSI_BOLD "\x1b[1m"
+ #define ANSI_COLOR_BG_GRAY "\x1b[48;5;100m"
+ #define ANSI_COLOR_BG_DARK_GRAY "\x1b[48;5;238m"
+
+//definindo máximo de registros
+#define MAX_REGISTROS 100
+
+// Estruturas p/ representar um registro e suas variáveis
+struct Registro {
+    int ID;
+    char nomeAluno[100];
+    char nomeCurso[50];
+    int semestre;
+    float nota;
+};
+struct Registro registros[MAX_REGISTROS];
+int numRegistros = 0;
+// Função oculta para salvar registros em um arquivo
+void salvarRegistros() {
+    FILE *arquivo = fopen("registros.txt", "w");
+    if (arquivo == NULL) {
+        fprintf(stderr, " " ANSI_COLOR_BG_RED "[!] Erro ao abrir o arquivo para salvar." ANSI_COLOR_RESET "\n");
+        exit(1);
+    }
+
+    for (int i = 0; i < numRegistros; i++) {
+        fprintf(arquivo, "%d|%s|%s|%d|%.2f\n", registros[i].ID, registros[i].nomeAluno, registros[i].nomeCurso, registros[i].semestre, registros[i].nota);
+    }
+
+    fclose(arquivo);
+}
+// Função oculta para carregar registros de um arquivo
+void carregarRegistros() {
+    FILE *arquivo = fopen("registros.txt", "r");
+    if (arquivo == NULL) {
+        printf(" ------------------------------------------------\n");
+        fprintf(stderr, " |Criando um arquivo de registros novo...       |\n");
+        return;
+    }
+
+    while (fscanf(arquivo, "%d|%99[^|]|%49[^|]|%d|%f\n", &registros[numRegistros].ID, registros[numRegistros].nomeAluno, registros[numRegistros].nomeCurso, &registros[numRegistros].semestre, &registros[numRegistros].nota) == 5) {
+        numRegistros++;
+        if (numRegistros >= MAX_REGISTROS) {
+            printf("Limite de registros atingido.\n");
+            break;
+        }
+    }
+
+    fclose(arquivo);
+}
+// Função p/ criar um registro
+void criarRegistro() {
+    while (1) {
+        printf(" ------------------------------------------------\n");
+        printf(" ID do aluno: ");
+        scanf(" %d", &registros[numRegistros].ID);
+        printf(" Aluno: ");
+        scanf(" %[^\n]s", registros[numRegistros].nomeAluno);
+        printf(" Curso: ");
+        scanf(" %[^\n]s", registros[numRegistros].nomeCurso); // " %[^\n]s" permite receber todos os caracteres até a quebra de linha, problema resolvido em relação à primeira parte do projeto
+        printf(" Semestre: ");
+        scanf(" %d", &registros[numRegistros].semestre);
+        printf(" Nota do bimestre: ");
+        scanf(" %f", &registros[numRegistros].nota);
+
+        // Salva as alterações no arquivo após a edição
+        salvarRegistros();
+        
+        numRegistros++; // Pós-incremento para incrementar numRegistros após a avaliação da expressão
+        printf(" ------------------------------------------------\n");
+        Sleep(600); // Efeito de espera para mostrar informações na tela
+        printf(" " ANSI_COLOR_BG_DARK_GREEN "Registro criado com sucesso." ANSI_COLOR_RESET "\n");
+        Sleep(600); // Efeito de espera para mostrar informações na tela
+
+        char opcao;
+        printf(" ------------------------------------------------\n");
+        printf(" >Continuar registrando? ('S': +1 registro/'N': Menu): ");
+        scanf(" %c", &opcao);
+        if (opcao != 'S' && opcao != 's') {
+            break;
+        }
+        if (numRegistros >= MAX_REGISTROS) {
+            printf(ANSI_COLOR_BG_RED "\n\n Limite de registros atingido." ANSI_COLOR_RESET "\n");
+            break;
+        }
+        // Inicializa as variáveis do novo registro
+        memset(&registros[numRegistros], 0, sizeof(struct Registro));
+    }
+    while (getchar() != '\n'); // Limpa o buffer
+system("cls");
+}
+// Função p/ listar os registros
+void listarRegistros() {
+    printf(" ------------------------------------------------\n");
+    printf(" " ANSI_COLOR_BG_DARK_ORANGE "           LISTA DE REGISTROS                   " ANSI_COLOR_RESET "\n");
+
+    if (numRegistros == 0) {
+        printf(" "ANSI_COLOR_BG_RED "[!] VAZIO." ANSI_COLOR_RESET "\n");
+
+    } else {
+        int i = 0;
+        while (i < numRegistros) {
+            printf(" ID do Aluno: %d\n", registros[i].ID);
+            printf(" Aluno: %s\n", registros[i].nomeAluno);
+            printf(" Curso: %s\n", registros[i].nomeCurso);
+            printf(" Semestre: %d\n", registros[i].semestre);
+            printf(" Nota: %.1f\n", registros[i].nota);
+            printf(" ------------------------------------------------\n");
+
+            i++;  // Incremento apenas se o registro não for excluído dentro do loop
+        }
+    }
+    printf(" ------------------------------------------------\n");
+    printf(" Pressione Enter para voltar ao menu... \n\n");
+    getchar(); // Aguarda Enter
+    while (getchar() != '\n'); // Limpa o buffer
+    system("cls");
+}
+// Função p/ calcular nota total da prova por questão, somar com a nota do trabalho e obter a média bimestral
+void calcularSomaNotas() {
+    float i;
+    float numero, soma = 0.0;
+    int idAluno; // Variável para armazenar o ID do aluno associado à nota bimestral
+
+    // Limpa a variável global antes de uma nova soma
+    soma = 0.0;
+
+    do {
+        printf(" ------------------------------------------------\n");
+        printf(" " ANSI_COLOR_BG_MAGENTA "           CALCULO DE NOTA BIMESTRAL            " ANSI_COLOR_RESET "\n");
+        printf(" Primeiro calcule a soma das 10 questoes de prova\n");
+
+        // Solicita o ID do aluno associado à nota bimestral antes 
+        printf(" >Informe o ID do aluno p/ atribuir a nota: ");
+        scanf(" %d", &idAluno);
+
+        //  Busca o aluno com o ID fornecido
+        int alunoEncontrado = 0;
+        int indiceAluno = 0;
+        for (int j = 0; j < numRegistros; j++) {
+            if (registros[j].ID == idAluno) {
+                alunoEncontrado = 1;
+                indiceAluno = j; // Armazena o índice do aluno encontrado
+                break; // Encerra o loop após encontrar o aluno
+            }
+        }
+
+        if (!alunoEncontrado) {
+            printf(" " ANSI_COLOR_BG_RED "[!] Aluno com ID %d nao encontrado." ANSI_COLOR_RESET "\n", idAluno);
+            printf(" ------------------------------------------------\n");
+
+            char resposta1; // Variável para voltar ao menu ou repetir operação
+            printf(" >Informar novo ID? ('S': Repetir/'N': Menu): ");
+            scanf(" %c", &resposta1);
+
+            if (resposta1 == 'n' || resposta1 == 'N') {
+                system("cls");
+                break;
+            }
+            continue; // Volta para o início do loop se o aluno não for encontrado
+        }
+
+        // Calcula a soma das notas das questões de prova
+        for (i = 1; i <= 10; i++) {
+            printf("\n >Digite a nota obtida na questao %.0f: ", i);
+            scanf(" %f", &numero);
+            soma += numero;
+        }
+
+        printf(" ------------------------------------------------\n");
+        printf(" " ANSI_COLOR_BG_GRAY "A nota da prova e': %.1f" ANSI_COLOR_RESET "\n", soma);
+
+        // Soma a nota do trabalho à nota da prova
+        float notaTrabalho;
+        printf(" >Agora digite a nota do trabalho: ");
+        scanf(" %f", &notaTrabalho);
+        soma += notaTrabalho;
+
+        // Atribui a nota bimestral calculada diretamente p/ estrutura do aluno
+        registros[indiceAluno].nota = soma;
+
+        printf(" ------------------------------------------------\n");
+        printf(" " ANSI_COLOR_BG_BROWN "A nota bimestral final e': %.1f" ANSI_COLOR_RESET "\n", registros[indiceAluno].nota);
+        printf(" ------------------------------------------------\n");
+
+        char resposta; // variável para voltar ao menu ou repetir operação
+        Sleep(600); // Efeito de espera para mostrar informações na tela
+        printf(" " ANSI_COLOR_BG_DARK_GREEN "Nota atribuida com sucesso." ANSI_COLOR_RESET"\n");
+        Sleep (600); // Efeito de espera para mostrar informações na tela
+        printf(" ------------------------------------------------\n");
+        printf(" >Realizar nova soma de notas? ('S': +1 soma/'N': Menu): ");
+        scanf(" %c", &resposta);
+
+        if (resposta == 'n' || resposta == 'N') {
+            system("cls");
+            break;
+        }
+    } while (1); // determina loop caso o usuário queira fazer outra operação
+    system("cls");
+}
+// Função p/ editar o registro de aluno
+void editarAluno() {
+    int idEdicao;
+    do {
+        printf(" Digite o ID do aluno que deseja editar: ");
+        scanf("%d", &idEdicao);
+
+        int encontrado = 0;
+        for (int i = 0; i < numRegistros; i++) { // Exibe o registro escolhido
+            if (registros[i].ID == idEdicao) {
+                Sleep (600);
+                printf(" ------------------------------------------------\n");
+                printf(" ID do Aluno: %d\n", registros[i].ID);
+                printf(" Aluno: %s\n", registros[i].nomeAluno);
+                printf(" Curso: %s\n", registros[i].nomeCurso);
+                printf(" Semestre: %d\n", registros[i].semestre);
+                printf(" Nota do bimestre: %.1f\n", registros[i].nota);
+                printf(" ------------------------------------------------\n");
+               
+                // Solicitar ao usuário qual campo editar
+                Sleep (600);
+                printf("           " ANSI_COLOR_BG_BROWN "|Qual campo deseja editar?|" ANSI_COLOR_RESET "\n");
+                printf(" 1. ID do Aluno\n");
+                printf(" 2. Aluno\n");
+                printf(" 3. Curso\n");
+                printf(" 4. Semestre\n");
+                printf(" 5. Nota do Bimestre\n");
+                int opcao;
+                while (1) {
+                    printf(" >Escolha a opcao (1-5): ");
+
+                    if (scanf("%d", &opcao) != 1) {
+                        // Se a entrada não for um número, limpar o buffer e solicitar novamente
+                        printf(" Entrada invalida. Por favor, insira um número (1-5): ");
+                        while (getchar() != '\n');  // Limpar o buffer
+                        continue;
+                    }
+
+                    if (opcao < 1 || opcao > 5) {
+                        printf(" Opcao invalida. Por favor, escolha um número (1-5): ");
+                        continue;
+                    }
+
+                    break;  // Saia do loop se a entrada for válida
+                }
+
+                switch (opcao) {
+                    case 1:
+                        // Leitura do Novo ID
+                        printf(" Novo ID do Aluno: ");
+                        int novoID;
+                        scanf("%d", &novoID);
+
+                        // Verifica se o novo ID já existe
+                        int idExistente = 0;
+                        for (int j = 0; j < numRegistros; j++) {
+                            if (j != i && registros[j].ID == novoID) {
+                                idExistente = 1; 
+                                break;  
+                            }
+                        }
+
+                        if (idExistente) {
+                            printf(" " ANSI_COLOR_BG_RED "[!] O novo ID já existe. Escolha um ID único." ANSI_COLOR_RESET "\n");
+                            break;
+                        }
+
+                        registros[i].ID = novoID;
+                        break;
+                    case 2:
+                        printf(" Novo Nome do Aluno: ");
+                        scanf(" %[^\n]s", registros[i].nomeAluno);
+                        break;
+                    case 3:
+                        printf(" Novo Nome do Curso: ");
+                        scanf(" %[^\n]s", registros[i].nomeCurso);
+                        break;
+                    case 4:
+                        printf(" Novo Semestre: ");
+                        scanf("%d", &registros[i].semestre);
+                        break;
+                    case 5:
+                        printf(" Nova Nota do Bimestre: ");
+                        scanf(" %f", &registros[i].nota);
+                        break;
+                    default:
+                        printf(" Opcao invalida.\n");
+                        continue;
+                }
+
+                printf(" " ANSI_COLOR_BG_DARK_GREEN "Registro editado com sucesso." ANSI_COLOR_RESET "\n");
+                printf(" ------------------------------------------------\n");
+
+                // Salva as alterações no arquivo após a edição
+                salvarRegistros();
+
+                encontrado = 1;
+                break;
+            }
+        }
+
+        if (!encontrado) {
+            printf(" " ANSI_COLOR_BG_RED "[!] Aluno com ID %d nao encontrado." ANSI_COLOR_RESET "\n", idEdicao);
+        }
+
+        // Variável p/ volta ao menu ou repetir operação
+        char resposta;
+        printf(" >Realizar outra edicao? ('S': +1 edicao/'N': Menu): ");
+        scanf(" %c", &resposta);
+
+        if (resposta == 'n' || resposta == 'N') {
+            system("cls");
+            break;
+        }
+    } while (1); // Determina loop caso o usuário queira fazer outra operação
+    system("cls");
+}
+// Função para excluir registro de aluno
+void excluirRegistro() {
+    int idExclusao;
+    char resposta;
+
+    do {
+        printf(" >Digite o ID do aluno que deseja excluir: ");
+        scanf("%d", &idExclusao);
+
+
+        int encontrado = 0;
+
+        for (int i = 0; i < numRegistros; i++) {
+            if (registros[i].ID == idExclusao) {
+                printf(" ------------------------------------------------\n");
+                printf(" ID do Aluno: %d\n", registros[i].ID);
+                printf(" Aluno: %s\n", registros[i].nomeAluno);
+                printf(" Curso: %s\n", registros[i].nomeCurso);
+                printf(" Semestre: %d\n", registros[i].semestre);
+                printf(" Nota: %.1f\n", registros[i].nota);
+                printf(" ------------------------------------------------\n");
+
+                printf(" >Confirmar exclusao? ('S': Excluir/'N': Voltar) \n");
+                scanf(" %c", &resposta);
+
+                if (resposta == 's' || resposta == 'S') {
+                    // Realiza a exclusão do registro
+                    encontrado = 1;
+
+                    // Caso não seja o último registro, move os registros subsequentes para uma posição atrás
+                    if (i < numRegistros - 1) {
+                        for (int j = i; j < numRegistros - 1; j++) {
+                            registros[j] = registros[j + 1];
+                        }
+                    }
+
+                    numRegistros--;
+
+                    // Salva as alterações no arquivo após a exclusão
+                    salvarRegistros();
+
+                    printf(" " ANSI_COLOR_BG_DARK_GREEN "Registro excluido com sucesso." ANSI_COLOR_RESET"\n");
+                } else if (resposta == 'n' || resposta == 'N') {
+                    encontrado = 1;  // O aluno foi encontrado, mas não será excluído
+                }
+
+                break; // Sai do loop após encontrar o registro
+            }
+        }
+
+        if (!encontrado) {
+            printf(" " ANSI_COLOR_BG_RED "ID do aluno nao encontrado." ANSI_COLOR_RESET"\n");
+        }
+
+        // Pergunta se o usuário deseja excluir outro registro
+        printf(" >Deseja excluir outro registro? ('S': Sim/'N': Menu) \n");
+        scanf(" %c", &resposta);
+
+    } while (resposta == 's' || resposta == 'S');
+    system ("cls");
+}
+// Função para buscar registros por campo
+void buscarPorCampo(char campo[], char valorBusca[])
+{     // Converte o campo para minúsculas para tornar a comparação insensível a maiúsculas/minúsculas, tornando a pesquisa mais facil
+    for (int i = 0; campo[i]; i++)
+    {
+        campo[i] = tolower((unsigned char)campo[i]);
+        valorBusca[i] = tolower((unsigned char)valorBusca[i]);
+    }
+      int encontrados = 0;
+
+    do
+    {
+        printf(" ------------------------------------------------\n");
+        printf("       " ANSI_COLOR_BG_MAGENTA "RESULTADOS DA BUSCA POR '%s'>'%s'" ANSI_COLOR_RESET "  \n", campo, valorBusca);
+
+        for (int i = 0; i < numRegistros; i++)
+        { // Faz a busca
+            if ((strcasecmp(campo, "ID" ) == 0) && (registros[i].ID == atoi(valorBusca)))
+            {
+                printf(" ID do Aluno: %d\n", registros[i].ID);
+                printf(" Aluno: %s\n", registros[i].nomeAluno);
+                printf(" Curso: %s\n", registros[i].nomeCurso);
+                printf(" Semestre: %d\n", registros[i].semestre);
+                printf(" Nota: %.1f\n", registros[i].nota);
+                printf(" ------------------------------------------------\n");
+                encontrados++;
+            }
+            else if ((strcasecmp(campo, "Aluno") == 0) && (strcasestr(registros[i].nomeAluno, valorBusca) != NULL))
+            {
+                printf(" ID do Aluno: %d\n", registros[i].ID);
+                printf(" Aluno: %s\n", registros[i].nomeAluno);
+                printf(" Curso: %s\n", registros[i].nomeCurso);
+                printf(" Semestre: %d\n", registros[i].semestre);
+                printf(" Nota: %.1f\n", registros[i].nota);
+                printf(" ------------------------------------------------\n");
+                encontrados++;
+            }
+            else if ((strcasecmp(campo, "Curso") == 0) && (strcasestr(registros[i].nomeCurso, valorBusca) != NULL))
+            {
+                printf(" ID do Aluno: %d\n", registros[i].ID);
+                printf(" Aluno: %s\n", registros[i].nomeAluno);
+                printf(" Curso: %s\n", registros[i].nomeCurso);
+                printf(" Semestre: %d\n", registros[i].semestre);
+                printf(" Nota: %.1f\n", registros[i].nota);
+                printf(" ------------------------------------------------\n");
+                encontrados++;
+            }
+            else if ((strcasecmp(campo, "Semestre") == 0) && (registros[i].semestre == atoi(valorBusca)))
+          {
+            printf(" ID do Aluno: %d\n", registros[i].ID);
+            printf(" Aluno: %s\n", registros[i].nomeAluno);
+            printf(" Curso: %s\n", registros[i].nomeCurso);
+            printf(" Semestre: %d\n", registros[i].semestre);
+            printf(" Nota: %.1f\n", registros[i].nota);
+            printf(" ------------------------------------------------\n");
+            encontrados++;
+           }
+
+            else if ((strcasecmp(campo, "Nota") == 0) && (atof(valorBusca) == registros[i].nota))
+         {
+           printf(" ID do Aluno: %d\n", registros[i].ID);
+           printf(" Aluno: %s\n", registros[i].nomeAluno);
+           printf(" Curso: %s\n", registros[i].nomeCurso);
+           printf(" Semestre: %d\n", registros[i].semestre);
+           printf(" Nota: %.1f\n", registros[i].nota);
+           printf(" ------------------------------------------------\n");
+            encontrados++;
+         }
+        }
+
+        if (encontrados == 0)
+        {
+            printf(" " ANSI_COLOR_BG_RED "[!] Nenhum registro encontrado para '%s'>'%s'." ANSI_COLOR_RESET "\n", campo, valorBusca);
+        }
+
+        printf(" ------------------------------------------------\n");
+
+        char resposta;
+        printf(" >Fazer outra busca? ('S': Sim/'N': Menu): ");
+        scanf(" %c", &resposta);
+
+        if (resposta == 'n' || resposta == 'N')
+        {
+            break;
+        }
+
+        // Limpa o buffer
+        while (getchar() != '\n');
+
+        // Solicita um novo valor de busca
+        printf(" >Informe um novo campo para busca: ");
+        scanf(" %[^\n]s", campo);
+        printf(" >Informe um novo valor para busca: ");
+        scanf(" %[^\n]s", valorBusca);
+
+        // Reinicia o contador de encontrados para a nova busca
+        encontrados = 0;
+
+    } while (1);
+
+    system("cls");
+}
+// Função p/ exibir o menu principal
+void exibirMenu(){
+    printf(" ------------------------------------------------\n");
+    printf(" |              " ANSI_COLOR_BG_DARK_GRAY"[MENU PRINCIPAL]" ANSI_COLOR_RESET "                |\n");
+    printf(" |" ANSI_COLOR_BG_BLUE "1. Criar Registro                             " ANSI_COLOR_RESET "|\n");
+    printf(" |" ANSI_COLOR_BG_BLUE "2. Listar Registros                           " ANSI_COLOR_RESET"|\n");
+    printf(" |" ANSI_COLOR_BG_BLUE "3. Calcular Nota Bimestral                    " ANSI_COLOR_RESET "|\n");
+    printf(" |" ANSI_COLOR_BG_BLUE "4. Editar Registro                            " ANSI_COLOR_RESET "|\n");
+    printf(" |" ANSI_COLOR_BG_BLUE "5. Excluir um Registro                        " ANSI_COLOR_RESET "|\n");
+    printf(" |" ANSI_COLOR_BG_BLUE "6. Buscar um Registro                         " ANSI_COLOR_RESET "|\n");
+    printf(" |" ANSI_COLOR_BG_RED  "7. Sair do Programa                           " ANSI_COLOR_RESET "|\n");
+    printf(" ------------------------------------------------\n");
+    printf(" >Escolha uma opcao: ");
+}
+// Função principal p/ receber opções menu
+int main() {
+    SetConsoleTitle("SISTEMA DE NOTAS BIMESTRAIS"); // Insere título no console
+    system("mode 50 , 25"); // Define as dimensões do programa
+    int escolha;
+    char campo[50], valorBusca[100];
+    carregarRegistros();
+     while (1) {
+        exibirMenu();
+        scanf("%d", &escolha);
+        switch (escolha) {
+            case 1:
+                criarRegistro();
+                break;
+            case 2:
+                listarRegistros();
+                break;
+            case 3:
+                calcularSomaNotas();
+                break;
+            case 4:
+                editarAluno();
+                break;
+            case 5:
+                excluirRegistro();
+                break;   
+            case 6:
+                printf("\n >Informe o campo para busca: ");
+                scanf(" %[^\n]s", campo);
+                printf("\n >Informe o valor para busca: ");
+                scanf(" %[^\n]s", valorBusca);
+               buscarPorCampo(campo, valorBusca);
+            break;
+            case 7:
+                printf(" ------------------------------------------------\n");
+                printf("Encerrando o programa...\n");
+                Sleep(600); // Efeito de espera para fechar o programa e possibilitar a leitura da frase impressa
+                exit(0);
+            default:
+                printf("Escolha uma opcao valida.\n");
+        }
+        atexit(salvarRegistros);
+    }
+    return 0;
+}
